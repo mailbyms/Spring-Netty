@@ -9,14 +9,16 @@ import javax.annotation.Resource;
 
 @SpringBootApplication
 public class NettyApplication implements CommandLineRunner {
+	static final int MAX_LISTEN_PORT = 100;
+
 	public static void main(String[] args) {
 		SpringApplication.run(NettyApplication.class, args);
 	}
 
 	@Override
 	public void run(String... args) throws Exception {
-		NettyServer nettyServer = new NettyServer(7000);
-		nettyServer.start();
+			NettyServer nettyServer = new NettyServer(7000, MAX_LISTEN_PORT);
+			nettyServer.start();
 	}
 
 }

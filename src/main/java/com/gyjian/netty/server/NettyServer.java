@@ -14,14 +14,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.HashSet;
+import java.util.Set;
 
 public class NettyServer {
     private final int port;
+    private final int maxListenPortCount;
     private Logger log = LoggerFactory.getLogger(this.getClass());
 
-    public NettyServer(int port)
+    public NettyServer(int port, int maxListenPortCount)
     {
         this.port=port;
+        this.maxListenPortCount = maxListenPortCount;
     }
 
     public void start() throws Exception{
@@ -31,7 +35,7 @@ public class NettyServer {
         {
             ServerBootstrap serverBootstrap=new ServerBootstrap();
             serverBootstrap.group(group)
-                    .localAddress(new InetSocketAddress(port))
+                    //.localAddress(new InetSocketAddress(port))
                     .channel(NioServerSocketChannel.class)
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
@@ -41,8 +45,20 @@ public class NettyServer {
                             channel.pipeline().addLast(serverHandler);
                         }
                     });
-            ChannelFuture f=serverBootstrap.bind().sync();
-            f.channel().closeFuture().sync();
+
+            Set<ChannelFuture> futureSet = new HashSet<>();
+            for(int i = 0; i< maxListenPortCount; i++){
+                int tmpPort = port + i;
+                ChannelFuture f=serverBootstrap.bind(tmpPort).sync();
+                log.info("LISTEN on port:{}", tmpPort);
+
+                futureSet.add(f);
+            }
+
+            for(ChannelFuture f:futureSet){
+                f.channel().closeFuture().sync();
+            }
+
         }
         finally {
             group.shutdownGracefully().sync();
